@@ -1,0 +1,2 @@
+This TIF is an ETM image taken from p168r77_2008-08-29_r36s_sub_b1234. It was downloaded via Glovis, was reprojected in ERDAS imagine to UTM Zone 36 South, and then clipped.
+
