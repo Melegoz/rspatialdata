@@ -1,0 +1,795 @@
+<style>
+.footer {
+    color: black;
+    background: #E8E8E8;
+    position: fixed;
+    top: 90%;
+    text-align:center;
+    width:100%;
+}
+.midcenter {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+}
+.small-code pre code {
+  font-size: 1em;
+}
+
+.reveal h3 {
+  word-wrap: normal;
+  -moz-hyphens: none;
+}
+.reveal h1 {
+  word-wrap: normal;
+  -moz-hyphens: none;
+}
+</style>
+
+Geospatial Data Processing and Analysis in R
+========================================================
+autosize: true  
+transition: rotate
+transition-speed: slow
+
+Andy Lyons<br>
+Stanford University<br>
+
+
+<div class="midcenter"><div style="margin-left:-0px;margin-top:-75px;"><img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/earth_cloth_300x300.png"></img></div></div>
+
+<div class="footer" style="margin-top:-50px;background-color:transparent;"><SPAN STYLE="font-size:80%;font-weight:bold;"><a href="http://www.meetup.com/r-enthusiasts/">The Berkeley R Language Beginner Study Group</a><br>August 19, 2014</SPAN></div>
+
+About Myself
+========================================================
+<div class="footer" style="margin-top:-200px;background: #FFFFFF;"><SPAN STYLE="font-size:90%">
+<img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/ag206_isos_600x200.png"></img><br>
+<a href="http://tlocoh.r-forge.r-project.org">http://tlocoh.r-forge.r-project.org</a>
+</SPAN></div>
+ - Cal alumni, defected to Stanford after 2013 football season
+ - research areas include:
+   + animal movement 
+   + land use / land cover change 
+   + environmental impacts of proposed roads 
+ - animal movement package: T-LoCoH
+
+Resources
+========================================================
+<div class="footer" style="margin-top:-0px;"><SPAN STYLE="font-size:80%">Slides at <a href="http://rpubs.com/ajlyons/rspatialdata">http://rpubs.com/ajlyons/rspatialdata</a><br>Additional links at end</SPAN></div>
+<div style="height:80%;"><img src="images/applied_spatial_data_analysis.jpg"></div>
+***
+![Animove Cheatsheet](images/animove_cheatsheet.jpg)
+
+Uses of Spatial Data in Science
+========================================================
+- spatial analysis:<br>using location or spatial relationships as an **explanatory** or **predictive** variable
+- examining the effects of **scale** 
+- backdrops to show **context**  
+
+***  
+
+![cholera map](images/cholera_kernel_density.jpg)
+
+
+Challenges with Spatial Data in R
+========================================================
+<div class="footer" style="margin-top:-200px;"><strong>&#8658; Understanding and manipulating spatial data in R<br>can be a real challenge!</strong></div>
+- many types and formats of spatial data
+- R is not the easiest program to learn
+- there are a ton of packages from a very diverse user community 
+
+Presentation Goals
+========================================================
+* help you get to the point where you can do an analysis or visualization
+* point out some of the commonly-used packages for spatial data manipulation and analysis
+* be a resource you can come back to
+
+Outline
+======================================================
+left: 60%
+
+**Topics**
+- spatial data classes
+- packages for importing data
+- classic spatial data processing
+  + projections
+  + subsetting
+  + buffer / union / intersection
+- spatial selection and joins
+- raster operations
+- basic visualization  
+- R vs. GIS
+
+***  
+
+**Omitted**
+- more advanced visualization
+- spatial statistics
+- geodatabases
+- network analysis
+- many other...
+
+
+Rated PG
+========================================================
+title:false
+
+<div class="midcenter"><div style="margin-left:-250px;margin-top:-125px;"><img style="margin:0px; background-color:transparent; border:0px; box-shadow:none; max-width:100%; max-height:100%; width=500px; height=250px;" src="images/pg13rcode_500x250.png"></img></div></div>
+
+
+Representing Physical Features
+========================================================
+right: 60%
+<img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/layers.jpg"></img>
+***
+<img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/vectors-features-abstract.png"></img>
+<img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/raster-features-abstract.png"></img>
+
+Spatial Data Types: sp package
+========================================================
+left: 75%
+
+<div class="footer" style="margin-top:-50px;font-size:80%;">
+- all sp* objects store projection info<br>
+- it's relatively easy to convert across data types within and between packages
+</div>
+
+**Vector data classes**
+
+<code style="font-size:80%;">SpatialPoints, SpatialPointsDataFrame<br>
+SpatialLines, SpatialLinesDataFrame<br>
+SpatialPolygons, SpatialPolygonsDataFrame</code>
+
+To see all spatial data classes:
+
+```{r show_spatial, eval=FALSE}
+require(sp)
+getClass('Spatial')
+```
+
+***
+
+**Raster classes**
+
+<code style="font-size:80%;">SpatialPixels<br>
+SpatialGrid</code>
+
+Creating  SpatialPoints Objects
+===============================
+
+
+Three options:
+ - from scratch
+ - promote a data frame with x and y columns
+ - import a GIS file
+
+Create a SpatialPoints Object from Scratch
+===============================
+class: small-code
+```{r create_pts}
+require(sp)
+xy <- matrix(data=runif(n=100), ncol=2)
+head(xy)
+xySp <- SpatialPoints(xy)
+summary(xySp)
+```
+
+Create a SpatialPoints Object from Scratch
+===============================
+class: small-code
+
+```{r plotxy, fig.align="center"}
+plot(xySp)
+```
+
+SpatialPointsDataFrame
+===============================
+<img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/SpatialPointsDataFrame2x.png"></img>
+
+
+Promote a DataFrame to a SpatialPointsDataFrame
+===============================
+class: small-code 
+```{r load_canada_cities}
+## See which datasets come bundled with the maps package
+## data(package="maps")
+
+## Load the data frame called 'canada.cities'
+require(maps)
+data(canada.cities)
+head(canada.cities)
+```
+
+Promote a DataFrame to a SpatialPointsDataFrame
+===============================
+class: small-code
+```{r promote_data_frame, out.height=200, fig.align="center", cache=TRUE}
+## Get just the cities just for Ontario
+citiesOnt <- canada.cities[canada.cities$country.etc == "ON",]
+
+## Promote this data frame to a SpatialPointsDataFrame
+## by stating which columns contain the x and y coordinates
+coordinates(citiesOnt) <- ~long + lat
+class(citiesOnt)
+plot(citiesOnt)
+```
+
+Working with the Data Frame of a SpatialPointsDataFrame
+===============================
+class: small-code
+
+- To grab the attribute table of a SpatialPointsDataFrame, use the **data** slot (with '@' character):
+- You can work with the data frame as you would with any data frame
+
+```{r show_ont_data}
+nrow(citiesOnt@data)
+head(citiesOnt@data)
+```
+
+Wait a minute - what happened to the coordinates?
+===============================
+class: small-code
+
+```{r head_ont_data}
+head(citiesOnt@data)
+```
+
+Fortunately we can get read them with the <tt>coordinates()</tt> function
+
+```{r head_coordinates_ont}
+head(coordinates(citiesOnt))
+```
+
+
+Adding a Column to the Data Frame of a SPDF Object
+=========================
+class: small-code
+
+```{r sel_for_study}
+selectForStudy <- sample(c(FALSE,TRUE), size=nrow(citiesOnt@data), replace=TRUE)
+citiesOnt@data[["samp"]] <- selectForStudy
+head(citiesOnt@data)
+```
+
+
+Filter on an Attribute
+===============================
+class: small-code
+```{r plot_cities_ont, cache=TRUE}
+## Plot the cities
+plot(citiesOnt, axes=T, asp=1, pch=16)
+```
+
+***
+
+```{r plot_big_cities, cache=TRUE}
+plot(citiesOnt, axes=T, asp=1, pch=16)
+## Highlight big cities
+plot(citiesOnt[citiesOnt@data$pop > 100000, ], pch=1, col="red", cex=3, add=TRUE)
+```
+
+
+Importing Vector Data with rgdal
+=========================
+class: small-code
+
+<div class="footer" style="margin-top:-100px;">For the complete list of vector import filters, run<br><code style="font-size:90%;">ogrDrivers()</code></div>
+
+package **rgdal** has a large set of import and export filters for both vector and raster GIS data
+
+
+```{r show_ogr_drivers}
+require(rgdal)
+head(ogrDrivers())
+```
+
+
+Example: Import a ShapeFile
+=========================
+class: small-code
+
+<div class="footer" style="margin-top:-100px;">Let's check out "scot_BNG.shp"</div>
+
+Let's get one of the sample shapefiles that comes with the **maptools** package 
+
+```{r get_vector_dir_rgdal}
+vectorDir <- system.file("vectors", package="rgdal")
+vectorDir
+list.files(vectorDir, pattern="*.shp")
+```
+
+
+Examine a Sample Shapefile (rgdal)
+=========================
+class: small-code
+
+<code stlye="font-size:80%">orgInfo()</code> returns metadata about GIS data saved on disk. Note how it also reads the projection info
+
+```{r get_meta_data_scot, cache=TRUE}
+ogrInfo(dsn=vectorDir, layer="scot_BNG")
+```
+
+Import a Vector Shapefile (rgdal)
+=========================
+class: small-code
+
+<code stlye="font-size:80%">readOGR()</code> is the function you use to import a vector file.
+
+```{r import_scot_bng, cache=TRUE}
+scotland <- readOGR(dsn=vectorDir, layer="scot_BNG")
+class(scotland)
+```
+
+Plot a SpatialPolygonDataFrame
+=========================
+class: small-code
+
+```{r plot_scotland, cache=TRUE, fig.align="center", cache=TRUE}
+plot(scotland, axes=T, asp=1, col=palette())
+```
+
+
+Inspect Attributes of a SpatialPolygonDataFrame
+=========================
+class: small-code
+
+Inspect attached data frame (attribute table).
+
+```{r head_scot_data}
+head(scotland@data)
+```
+
+Filter Spatial Features Based on an Attribute Value
+=========================
+class: small-code
+```{r plot_inverness, out.height=300, fig.align="center", cache=TRUE}
+## Inspect attached data frame (attribute table)
+idx <- which(scotland@data$NAME == "Inverness")
+idx
+plot(scotland[idx,], col="darkblue")
+```
+
+Get Vector Data Online (raster)
+=========================
+class: small-code
+
+The **raster** package has a function <code stlye="font-size:80%">getData()</code> to grab both vector and raster data from online repositories.
+
+```{r args_get_data}
+require(raster)
+args(getData)
+```
+ - **countries** - polygons for all countries 
+ - **GADM** - a database of global administrative boundaries
+ - **SRTM** - hole-filled CGIAR-SRTM (90 m resolution) 
+Projections
+ - **alt** - altitude (elevation) aggregated from SRTM 90 m resolution data between -60 and 60 latitude. '
+ - **worldclim** -  a database of global interpolated climate data
+
+Example: Regions Boundaries in Peru
+==========================
+class: small-code
+
+```{r get_peru_regions, out.height=300, fig.align="center", cache=TRUE}
+peruRegions <- getData('GADM', country='PER', level=1)
+class(peruRegions)
+plot(peruRegions, axes=T, asp=1)
+```
+
+
+
+Example: Adding Projection Info
+==========================
+class: small-code
+
+First, let's create some fake GPS points in Peru:
+
+```{r make_peru_gps_pts, cache=TRUE}
+ctr <- c(-77, -8)
+x <- runif(n=20, min=ctr[1] - 1, max=ctr[1] + 1)
+y <- runif(n=20, min=ctr[2] - 1, max=ctr[2] + 1)
+mygps_df <- data.frame(long=x, lat=y)
+head(mygps_df)
+mygps_spdf <- SpatialPoints(mygps_df)
+mygps_spdf
+```
+
+Example: Adding Projection Info
+==========================
+class: small-code
+
+```{r add_proj_info_gps, out.height=300, fig.align="center", cache=TRUE}
+projection(mygps_spdf) <- CRS("+proj=longlat +ellps=WGS84")
+plot(peruRegions, axes=T, asp=1)
+plot(mygps_spdf, pch=16, col="red", add=TRUE)
+```
+
+Note: we are not projecting coordinates here, only entering known projection info.
+
+Example: Reprojecting
+==========================
+class: small-code
+
+<div class="footer" style="margin-top:-100px;">Look for proj4 strings at <a href="http://www.spatialreference.org/">http://www.spatialreference.org/</a></div>
+
+```{r proj_gps_pts_utm}
+require(rgdal)
+mygps_utm <- spTransform(mygps_spdf, CRS("+proj=utm +south +zone=18 +ellps=WGS84")) 
+summary(mygps_utm)
+```
+
+Example: Reprojecting
+==========================
+class: small-code
+
+```{r plot_peru_regions_utm, fig.align="center", cache=TRUE}
+peruRegions_utm <- spTransform(peruRegions, CRS("+proj=utm +south +zone=18 +ellps=WGS84")) 
+plot(peruRegions_utm, axes=TRUE)
+plot(mygps_utm, add=TRUE, col="red", pch=16)
+```
+
+Geoprocessing: rgeos package
+========================================================
+class: small-code
+
+```{r require_rgeos}
+require(rgeos)
+```
+
+- interface to GEOS (Geometry Engine Open Source) Library 
+- functions include:
+   + union, distance, intersection, convex hull, envelope, buffer, simplify, polygon assembly, valid, area, length, intersects, touches, disjoint, crosses, within, contains, overlaps, equals, covers, etc.
+
+
+Buffer
+========================================================
+class: small-code
+
+```{r buf_inverness, fig.align="center"}
+inver <- scotland[scotland@data$NAME == "Inverness", ]
+plot(inver, axes=TRUE, asp=1)
+inver_buf <- gBuffer(inver, width=2000)
+plot(inver_buf, border="blue", lty=2, lwd=2, add=TRUE)
+```
+
+
+Delaunay Triangulation
+========================================================
+class: small-code
+
+```{r delaunay_tri, fig.align="center"}
+delTri <- gDelaunayTriangulation(mygps_utm)
+plot(delTri, axes=TRUE)
+plot(mygps_utm, col="red", pch=16, cex=2, add=TRUE)
+```
+
+
+Structure of Spatial* Objects
+========================================================
+![spatial* data structure](images/spatial-objects-data-structure.png)
+
+
+Exporting Spatial* Objects
+========================================================
+class: small-code
+
+Writable ogrDrivers
+
+```{r ogr_drivers}
+x <- ogrDrivers()
+as.character(x[x$write==TRUE,"name"])
+```
+
+
+Export To KML
+========================================================
+class: small-code
+
+
+```{r exp_ontario_kml_3}
+projection(citiesOnt) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+writeOGR(citiesOnt[citiesOnt[["samp"]], ], dsn="OntarioCities.kml", layer="Ontario Cities", driver="KML", dataset_options=c("NameField=name"))
+```
+
+<div class="midcenter"><div style="margin-left:-314px;margin-top:-160px;"><img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/ontario_cities_ge_628x459.jpg"></img></div></div>
+
+
+Take Home Points: Spatial* Data Classes
+===============================
+- the Spatial* data classes from the **sp** package are the most common data formats for vector data
+- you can create them from scratch within R or import from disk or geodatabases with functions from **rgdal**
+  + with enough gumption you can drill down and grab anything
+- spatial features can have an attached data frame (attribute table), which is similar to a regular data frame
+- **rgeos** has most of the geoprocessing functions you would find in GIS software
+
+
+Raster Data
+========================================================
+<div class="midcenter"><div style="margin-left:-300px;margin-top:-200px;"><img style="margin:0px; background-color:transparent; border:0px; box-shadow:none;" src="images/landsat_fcc_600x400.jpg"></img></div></div>
+
+
+Raster package
+=========================
+class: small-code
+
+<div class="footer" style="margin-top:-100px;">For details see the vignette: <em>Introduction to the 'raster' package</em></div>
+
+```{r require_raster}
+require(raster)
+```
+
+- read, write and manipulate gridded spatial data
+- basic and high-level analysis functions 
+- processing of large files
+
+Raster Data Types
+========================================================
+
+ - <code>RasterLayer</code> - a single layer raster
+ - <code>RasterStack</code> - multi-layer raster
+ - <code>RasterBrick</code> - multi-layer raster (from a single file on disk, faster)
+
+Note that Raster* objects can live in memory or disk (see vignette for details)
+
+
+Raster Layer: Create from Scratch
+=========================
+class: small-code
+
+```{r new_rast}
+myrast <- raster(extent(c(0,20,0,20)), ncol=10, nrow=10)
+myrast[] <- 1:100
+myrast
+```
+
+Raster Layer: Raster Algebra
+=========================
+class: small-code
+
+```{r plot_rast01, cache=TRUE}
+plot(myrast)
+```
+
+***
+
+```{r plot_rast_squared, cache=TRUE}
+myrastSquared <- -1 * myrast^2
+plot(myrastSquared)
+```
+
+
+Raster Data: Import a GeoTiff
+=========================
+class: small-code
+
+```{r get_rasterdir_pictures}
+rasterDir <- system.file("pictures", package="rgdal")
+rasterDir
+x <- list.files(rasterDir, pattern="*.tif", full.names=TRUE)
+x
+spna83.fn <- x[2]
+```
+
+Raster Data: Import a GeoTiff
+=========================
+class: small-code
+
+```{r gdal_info_spna}
+GDALinfo(spna83.fn)
+```
+
+Raster Data: Import a GeoTiff
+=========================
+class: small-code
+
+```{r import_geotiff, fig.align="center", cache=TRUE}
+spna83.sgdf <- readGDAL(spna83.fn)
+image(spna83.sgdf, col=gray(0:255/255))
+```
+
+
+ 
+Raster Data: Import online data
+=========================
+class: small-code
+
+```{r get_data_peru_srtm, cache=TRUE}
+demPeru <- getData('SRTM', lon=-77, lat=-8, download=TRUE)
+demPeru
+```
+
+Raster Data: Crop a Raster
+=========================
+class: small-code
+
+```{r crop_peru_rast, cache=TRUE, fig.align="center"}
+my_ext <- extent(-78,-76,-9,-7)
+demCentralPeru <- crop(demPeru, my_ext)
+rm(demPeru)  ## we don't need this big raster anymore so lets get the memory back
+plot(demCentralPeru)
+```
+
+Raster Data: Slope, Aspect, Hillshade
+=========================
+class: small-code
+
+```{r peru_hillshade, cache=TRUE, fig.align="center"}
+peruSlope <- terrain(demCentralPeru, opt="slope")
+peruAspect <- terrain(demCentralPeru, opt="aspect")
+peruHill <- hillShade(peruSlope, peruAspect, 40,270)
+plot(peruHill, col=grey(0:100/100), legend=FALSE)
+```
+
+
+Identify Steep Slopes
+=========================
+class: small-code
+
+```{r hist_slope_vals, cache=TRUE}
+hist(getValues(peruSlope))
+```
+
+***
+
+```{r steep_slope_define, cache=TRUE}
+## Create a blank copy of peruSlope
+steepSlope <- raster(peruSlope)
+
+## Fill in cells where slope > 0.5
+steepSlope[peruSlope > 0.5] <- 1
+plot(demCentralPeru)
+plot(steepSlope, col="red", add=TRUE, legend=FALSE)
+```
+
+Project a Raster
+=========================
+class: small-code
+
+```{r proj_rast_peru_utm, cache=TRUE}
+demCentralPeruUTM <- projectRaster(demCentralPeru, crs=CRS("+proj=utm +south +zone=18 +ellps=WGS84")) 
+demCentralPeruUTM
+```
+
+Resample a Raster
+=========================
+class: small-code
+
+```{r resample_peru_dem, cache=TRUE}
+demCentralPeru1km <- aggregate(demCentralPeruUTM, fact=11, fun=mean)
+demCentralPeru1km
+```
+
+Resample a Raster
+=========================
+class: small-code
+
+```{r plot_dem_peru, cache=TRUE}
+plot(demCentralPeruUTM, xlim=c(250000,300000), ylim=c(9100000,9150000))
+```
+
+***
+
+```{r plot_dem_resampled_peru, cache=TRUE}
+plot(demCentralPeru1km, xlim=c(250000,300000), ylim=c(9100000,9150000))
+```
+
+
+Overlay Points and Extract Values
+=========================
+class: small-code
+
+```{r extract_vals_at_pts01, cache=TRUE}
+plot(demCentralPeru)
+plot(mygps_spdf, pch=16, col="red", add=TRUE)
+```
+
+***
+
+```{r extract_vals_at_pts02, cache=TRUE}
+extract(demCentralPeru, mygps_spdf)
+```
+
+
+Create a Distance Surface
+=========================
+class: small-code
+
+```{r distance_surface_create, cache=TRUE, fig.align="center"}
+samplePtsRast <- rasterize(mygps_spdf, demCentralPeru, field=1)
+dist2SamplePtsRast <- distance(samplePtsRast)
+plot(dist2SamplePtsRast)
+plot(mygps_spdf, col="red", pch=16, add=TRUE)
+```
+
+Display Google Map with ggmap
+=========================
+class: small-code
+
+```{r ggmap_example, cache=FALSE, fig.align="center", out.height=450}
+require(ggmap)
+bboxPeru <- c(-78,-9,-76,-7)
+ggMapPeru <- get_map(location = bboxPeru, color = "color", source = "google", maptype = "satellite")
+ggmap(ggMapPeru, extent = "device", ylab = "Latitude", xlab = "Longitude") + geom_point(aes(x = long, y = lat, colour = "red"), data = as.data.frame(coordinates(mygps_spdf))) + theme(legend.position="none")
+```
+
+
+Take Home Points: Raster Data Classes
+===============================
+- the **raster** package has a pretty good suite of raster functions
+- there are tricks to handling large data files
+- rasterize and overlay functions allow you come combine vector and raster data
+
+GIS vs. R 
+==========================
+
+<div class="footer" style="margin-top:-0px;background: #FFFFFF;font-size:80%;"><SPAN style="font-size:70%;">Source: adapted from Robert Hijmans,<br><a href="http://www.slideshare.net/noamross/spatial-analysis-with-r-the-good-the-bad-and-the-pretty">http://www.slideshare.net/noamross/spatial-analysis-with-r-the-good-the-bad-and-the-pretty</a></span></div>
+
+**GIS**
+
+ - Visual interaction
+ - Data management
+ - Geometric operations
+ - Standard workflows
+ - Single map production
+ - Click, click, click, click
+ - Speed of execution
+
+***
+
+**R**
+
+ - Data and model focused
+ - Analysis
+ - Attributes as important
+ - Creativity and innovation
+ - Many (simpler) maps
+ - Repeatability (script)
+ - Speed of development
+
+
+When to Use GIS vs. R?
+==========================
+class: small-code
+
+**GIS**
+- no mapping experience
+- one-off maps
+- serious cartography
+- your data live in a geodatabase
+
+***
+
+**R**
+
+- no money for commercial software
+- need repeated analysis
+- integration with other analyses
+- development of new methods
+- working with large raster files
+
+
+Additional Resources
+==========================
+
+**Overview of Spatial Packages**
+ - http://cran.r-project.org/web/views/Spatial.html
+
+**Tutorials**
+ - http://rpubs.com/RobinLovelace/11869
+ - http://science.nature.nps.gov/im/datamgmt/statistics/r/advanced/spatial.cfm
+ - http://spatial.ly/r/
+ - http://gis.stackexchange.com/questions/45327/tutorials-to-handle-spatial-data-in-r
+
+Additional Resources
+==========================
+
+**R Spatial Cheatsheet**
+ - http://www.maths.lancs.ac.uk/~rowlings/Teaching/UseR2012/cheatsheet.html
+ - https://github.com/wegmann/RSdocs/releases/download/May2014_spatial/AniMove_refcard.pdf
+
+
+Discussion
+===========================
+
+<div class="footer" style="margin-top:-0px;"><SPAN STYLE="font-size:80%">Slides at <a href="http://rpubs.com/ajlyons/rspatialdata">http://rpubs.com/ajlyons/rspatialdata</a></div>
+
